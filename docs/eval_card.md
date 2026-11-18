@@ -37,7 +37,7 @@ Card này đi kèm mỗi báo cáo và được dùng lại ở Day 10.
 
 ## Vận hành
 
-- **Gate owner:** Eval owner (Hoàng Xuân Linh) xử lý khi gate exit 1: đọc metric bị chặn, tìm bước sai đầu tiên bằng `lab9.trace_case`, rồi chuyển cho người sửa. Không merge khi gate còn chặn.
+- **Gate owner:** Eval owner (Hoàng Xuân Lĩnh) xử lý khi gate exit 1: đọc metric bị chặn, tìm bước sai đầu tiên bằng `lab9.trace_case`, rồi chuyển cho người sửa. Không merge khi gate còn chặn.
 - **Phạm vi pilot:** yêu cầu hoàn phí giao trễ và bồi thường hàng hỏng cho một đơn của chính người yêu cầu. Chỉ đo trong môi trường MockLLM, chưa có người dùng thật.
 - **Khi nào tăng eval-set version:** khi thêm, bỏ hoặc sửa item, nhãn hay mã `failure_modes`. Sau đó chạy lại baseline trên nhánh được bảo vệ.
 
