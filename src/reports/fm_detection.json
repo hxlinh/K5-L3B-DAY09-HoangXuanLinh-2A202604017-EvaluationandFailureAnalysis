@@ -29,10 +29,8 @@
     "FM-05": {
       "bug": "pre_deducted",
       "trials": 15,
-      "detected": 10,
-      "missed_items": [
-        "E-013"
-      ]
+      "detected": 15,
+      "missed_items": []
     },
     "FM-06": {
       "bug": "stale_clause",
@@ -53,9 +51,9 @@
       "missed_items": []
     }
   },
-  "detected": 135,
+  "detected": 140,
   "trials": 140,
-  "detection_rate": 0.9643,
+  "detection_rate": 1.0,
   "fixed_false_alarms": 0,
   "fixed_trials": 70,
   "false_alarm_rate": 0.0
