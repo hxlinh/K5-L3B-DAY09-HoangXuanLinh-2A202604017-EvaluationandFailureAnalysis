@@ -25,6 +25,7 @@ Baseline: `E-swarm-20261118-1c4d`, eval set `1c4d3dbbc03a`.
 | pass_rate | năng lực | ≥ 0.85 và không giảm có ý nghĩa | có | 0.9857 |
 | reply_amount_matches_ledger | năng lực (FM-08) | ≥ 0.95 và không giảm có ý nghĩa | có | 1.0 |
 | db_fact_kept | năng lực (mức bước) | ≥ 0.95 | không | 0.9857 |
+| proposal_amount_correct | năng lực (mức bước) | ≥ 0.95 | không | 0.9857 |
 | pass_5 | theo dõi | ≥ 0.80 | không | 0.9286 |
 | cost_per_success | theo dõi | tăng ≤ 10% | không | 49.567 |
 
@@ -37,7 +38,7 @@ Baseline: `E-swarm-20261118-1c4d`, eval set `1c4d3dbbc03a`.
 | FM-02 | Host từ chối nhưng vẫn báo đã xử lý | `TrialPass`, `ReplyAmountMatchesLedger` | code | Trạng thái và ledger là dữ kiện có sẵn |
 | FM-03 | Tin ticket hơn DB | `DbFactKept`, `RefundAmountCorrect` | code | Trace có event override; ledger xác nhận hậu quả |
 | FM-04 | Cộng hoặc làm tròn sai | `RefundAmountCorrect` | code | Tiền luôn chấm bằng code |
-| FM-05 | Tự trừ trước khi gọi host | `RefundAmountCorrect`, `TrialPass` | code | Tiền luôn chấm bằng code; `TrialPass` bắt thêm sai đề xuất |
+| FM-05 | Tự trừ trước khi gọi host | `RefundAmountCorrect`, `ProposalAmountCorrect`, `TrialPass` | code | Tiền luôn chấm bằng code; đề xuất sai có thể không hiện trên ledger |
 | FM-06 | Dùng điều khoản cũ | `RefundAmountCorrect` | code | Tiền luôn chấm bằng code |
 | FM-07 | Hoàn nhầm claim khác | `ApprovalBypass` | code | Dòng ledger ngoài dự kiến đếm được chính xác |
 | FM-08 | Reply nói số tiền khác ledger | `ReplyAmountMatchesLedger` | code | Judge `helpful` bắt được 0/18 lỗi sai tiền |
@@ -56,11 +57,12 @@ Quy tắc: tiền và phê duyệt luôn chấm bằng code. Judge chỉ dùng c
 - [ ] 14 item: CI rộng, chỉ bắt được hồi quy lớn.
 - [ ] Judge replay trên CSV đã công khai, chưa có tập held-out mới.
 - [ ] `swarm` không ghi event `reply`, nên metric FM-08 trên baseline chưa chứng minh được câu trả lời đúng.
-- [ ] Grader bỏ sót FM-05 ở C-013 nếu không có `pass_rate`, vì ledger và reply trông vẫn đúng.
+- [ ] Bug chỉ xuất hiện ở một phần seed có thể không lộ ra với 5 seed.
 
 ## 7. Khi nào lên v1.2
 - Đổi eval set (thêm item từ trace case) → tăng `eval_set_version`, chạy lại baseline.
 - Đổi ngưỡng hoặc metric → tăng `metric_spec_version`, ghi lý do ở đây.
+- `metric_spec` 1.1: thêm `proposal_amount_correct` để giải thích lỗi FM-05 ở C-013, nơi ledger và reply vẫn trông đúng. Không ngưỡng nào bị nới.
 
 ## Phê duyệt
 | Vai trò | Tên | Ngày |

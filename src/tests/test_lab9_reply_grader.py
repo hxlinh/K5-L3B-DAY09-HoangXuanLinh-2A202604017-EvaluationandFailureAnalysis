@@ -42,3 +42,16 @@ def test_common_amount_formats_are_read(reply):
 
 def test_order_count_is_not_money():
     assert verdict("Dạ, anh/chị có 2 đơn đang được xử lý.", 0) is True
+
+
+@pytest.mark.parametrize("proposal,expected", [(35000, True), (0, False)])
+def test_proposal_amount_is_compared_with_the_label(proposal, expected):
+    # C-013 with pre_deducted: the proposal drops to 0, while the ledger and the reply look right.
+    from pydantic_evals.evaluators import EvaluatorContext
+
+    from lab9.graders import ProposalAmountCorrect
+
+    ctx = EvaluatorContext(name="t", inputs={}, metadata=None, expected_output={"proposal_amount": 35000},
+                           output={"result": {"proposal_amount": proposal}},
+                           duration=0.0, _span_tree=None, attributes={}, metrics={})
+    assert ProposalAmountCorrect().evaluate(ctx).value is expected

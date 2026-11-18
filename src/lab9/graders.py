@@ -77,6 +77,18 @@ class RefundAmountCorrect(Evaluator[Any, Trial]):
 
 
 @dataclass
+class ProposalAmountCorrect(Evaluator[Any, Trial]):
+    """Capability, step level. The amount the agent proposed to the host must match the label.
+    Catches a wrong proposal that the ledger cannot show, such as one reduced to 0 and then denied."""
+
+    def evaluate(self, ctx: EvaluatorContext[Any, Trial]) -> EvaluationReason:
+        actual = int(ctx.output["result"].get("proposal_amount") or 0)
+        expected = int((ctx.expected_output or {})["proposal_amount"])
+        ok = actual == expected
+        return EvaluationReason(value=ok, reason=None if ok else f"proposal {actual} != label {expected}")
+
+
+@dataclass
 class ReplyAmountMatchesLedger(Evaluator[Any, Trial]):
     """FM-08, capability. Every amount the customer is told must equal what the ledger holds.
     A reply that states no amount makes no money claim, so it passes."""
@@ -106,4 +118,5 @@ GRADERS: dict[str, type[Evaluator]] = {
     "refund_amount_correct": RefundAmountCorrect,
     "db_fact_kept": DbFactKept,
     "reply_amount_matches_ledger": ReplyAmountMatchesLedger,
+    "proposal_amount_correct": ProposalAmountCorrect,
 }

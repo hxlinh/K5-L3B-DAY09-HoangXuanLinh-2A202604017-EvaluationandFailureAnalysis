@@ -1,5 +1,5 @@
 # Lab 9 metric spec. Same eval-set version => thresholds may only get stricter (ratchet).
-metric_spec_version: "1.0"
+metric_spec_version: "1.1"
 eval_set_version: v1
 eval_set: data/eval/eval_set_v1.jsonl
 labels: data/eval/labels_v1.json          # labels never inline in items
@@ -16,5 +16,7 @@ metrics:
   # FM-08: every amount stated in the reply must equal the ledger.
   - {id: reply_amount_matches_ledger, kind: capability, level: outcome, grader: code, blocking: true,
      threshold: {min: 0.95, no_significant_drop: true}}
+  # FM-05 at step level: explains failures where the ledger and the reply still look right.
+  - {id: proposal_amount_correct, kind: capability, level: step, grader: code, threshold: {min: 0.95}, blocking: false}
   - {id: pass_5,                kind: capability, level: outcome,    grader: lab8.metrics.summarize, threshold: {min: 0.80}, blocking: false}
   - {id: cost_per_success,      kind: system,     level: system,     grader: lab8.metrics.summarize, threshold: {max_increase: 0.10}, blocking: false}

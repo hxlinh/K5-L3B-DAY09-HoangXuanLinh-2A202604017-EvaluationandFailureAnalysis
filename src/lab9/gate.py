@@ -11,11 +11,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 
 from lab8.console import utf8_stdio
 from lab9 import stats
-from lab9.eval import SPEC, load_spec, per_item
+from lab9.eval import SPEC, aggregate, load_spec, per_item
+from lab9.graders import GRADERS
 
 
 def integrity_check(pr: dict, base: dict, spec: dict, base_spec: dict | None = None) -> list[str]:
@@ -33,8 +35,111 @@ def integrity_check(pr: dict, base: dict, spec: dict, base_spec: dict | None = N
         including dropping no_significant_drop)
       - an item's slice tags in PR rows differ from the baseline's (relabelling an item out of a
         slice hides its regression from the slice gate)"""
-    # TODO M7
-    return []
+    problems = _structure_problems(pr, "PR") + _structure_problems(base, "baseline")
+    problems += _row_value_problems(pr, spec)
+    problems += _metric_mismatches(pr, spec)
+
+    pr_tags, base_tags = _slice_tags(pr), _slice_tags(base)
+    missing, extra = sorted(base_tags.keys() - pr_tags.keys()), sorted(pr_tags.keys() - base_tags.keys())
+    if missing or extra:
+        problems.append(f"(item, seed) set differs from baseline: {len(missing)} missing, {len(extra)} extra")
+    relabelled = sorted({key[0] for key in pr_tags.keys() & base_tags.keys() if pr_tags[key] != base_tags[key]})
+    if relabelled:
+        problems.append(f"slice tags differ from baseline for {relabelled}")
+
+    if base_spec is not None and base_spec.get("eval_set_version") == spec.get("eval_set_version"):
+        problems += _ratchet_problems(spec, base_spec)
+    return problems
+
+
+def _structure_problems(report: dict, name: str) -> list[str]:
+    """Checks that need no spec: bad metric values, crashed graders, wrong or repeated rows."""
+    problems = [f"{name} metric {metric} is {value}" for metric, value in report["metrics"].items()
+                if isinstance(value, float) and not math.isfinite(value)]
+    if report.get("evaluator_failures"):
+        problems.append(f"{name} has {len(report['evaluator_failures'])} evaluator failure(s)")
+    manifest = report["manifest"]
+    expected = manifest["items"] * len(manifest["seeds"])
+    if len(report["rows"]) != expected:
+        problems.append(f"{name} has {len(report['rows'])} rows, manifest requires {expected}")
+    keys = [(row["item_id"], row["seed"]) for row in report["rows"]]
+    if len(set(keys)) != len(keys):
+        problems.append(f"{name} has {len(keys) - len(set(keys))} duplicated (item, seed) row(s)")
+    return problems
+
+
+def _graded_metrics(spec: dict) -> list[str]:
+    return [metric["id"] for metric in spec["metrics"] if metric["id"] in GRADERS]
+
+
+def _row_value_problems(report: dict, spec: dict) -> list[str]:
+    """A grader verdict must be True or False. None or NaN would silently leave the mean."""
+    bad: dict[str, int] = {}
+    for row in report["rows"]:
+        for metric in _graded_metrics(spec):
+            if not isinstance(row.get(metric), bool):
+                bad[metric] = bad.get(metric, 0) + 1
+    return [f"{metric} has no valid verdict on {count} row(s)" for metric, count in bad.items()]
+
+
+def _metric_mismatches(report: dict, spec: dict) -> list[str]:
+    """The summary must equal what its own rows give, so editing a number alone is caught."""
+    rows = report["rows"]
+    metric_ids = [m for m in _graded_metrics(spec) if all(isinstance(row.get(m), bool) for row in rows)]
+    has_cost = all("cost" in row for row in rows)
+    recomputed = aggregate([{"cost": 0.0, **row} for row in rows], metric_ids, k_values=spec.get("pass_k", []))
+    problems = []
+    for metric, value in recomputed.items():
+        stated = report["metrics"].get(metric)
+        if metric == "cost_per_success" and not has_cost:
+            continue
+        if isinstance(stated, (int, float)) and value is not None and not math.isclose(stated, value, abs_tol=1e-9):
+            problems.append(f"metric {metric} says {stated}, its rows give {value}")
+    return problems
+
+
+def _slice_tags(report: dict) -> dict[tuple[str, int], tuple[str, ...]]:
+    return {(row["item_id"], row["seed"]): tuple(sorted(row.get("slices") or [])) for row in report["rows"]}
+
+
+def _looser(name: str, new: dict, old: dict) -> list[str]:
+    """How `new` weakens `old`. Works on a metric threshold and on a slice entry."""
+    problems = []
+    if "max" in old and new.get("max", math.inf) > old["max"]:
+        problems.append(f"{name}: max loosened from {old['max']} to {new.get('max')}")
+    if "min" in old and new.get("min", -math.inf) < old["min"]:
+        problems.append(f"{name}: min loosened from {old['min']} to {new.get('min')}")
+    if "max_increase" in old and new.get("max_increase", math.inf) > old["max_increase"]:
+        problems.append(f"{name}: max_increase loosened from {old['max_increase']} to {new.get('max_increase')}")
+    if old.get("no_significant_drop") and not new.get("no_significant_drop"):
+        problems.append(f"{name}: no_significant_drop removed")
+    return problems
+
+
+def _ratchet_problems(spec: dict, base_spec: dict) -> list[str]:
+    """On one eval-set version, a spec may get stricter but never weaker."""
+    problems = [f"spec field {field} changed on the same eval-set version"
+                for field in ("eval_set", "labels", "seeds", "bootstrap") if spec.get(field) != base_spec.get(field)]
+    new_metrics = {metric["id"]: metric for metric in spec["metrics"]}
+    for old in base_spec["metrics"]:
+        new = new_metrics.get(old["id"])
+        if new is None:
+            problems.append(f"metric {old['id']} removed")
+            continue
+        if old.get("blocking") and not new.get("blocking"):
+            problems.append(f"metric {old['id']} is no longer blocking")
+        problems += _looser(f"metric {old['id']}", new.get("threshold") or {}, old.get("threshold") or {})
+    new_slices = {(entry["name"], entry["metric"]): entry for entry in spec.get("slices") or []}
+    for old in base_spec.get("slices") or []:
+        name = f"slice {old['name']}/{old['metric']}"
+        new = new_slices.get((old["name"], old["metric"]))
+        if new is None:
+            problems.append(f"{name} removed")
+            continue
+        if old.get("blocking") and not new.get("blocking"):
+            problems.append(f"{name} is no longer blocking")
+        problems += _looser(name, new, old)
+    return problems
 
 
 def slice_check(pr: dict, base: dict, spec: dict) -> tuple[list[str], list[str]]:

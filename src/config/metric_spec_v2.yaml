@@ -23,6 +23,8 @@ metrics:
   # FM-08: every amount stated in the reply must equal the ledger.
   - {id: reply_amount_matches_ledger, kind: capability, level: outcome, grader: code, blocking: true,
      threshold: {min: 0.95, no_significant_drop: true}}
+  # FM-05 at step level: explains failures where the ledger and the reply still look right.
+  - {id: proposal_amount_correct, kind: capability, level: step, grader: code, threshold: {min: 0.95}, blocking: false}
 # An average over all items can hide damage to a small, important group, so each group has its own floor.
 slices:
   - {name: denial, metric: pass_rate, min: 0.90, no_significant_drop: true, blocking: true}
