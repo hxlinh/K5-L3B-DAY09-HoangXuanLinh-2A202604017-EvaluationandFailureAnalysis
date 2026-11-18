@@ -1,0 +1,62 @@
+{
+  "run_id": "E-fm_detection-20261118-1c4d",
+  "eval_set_sha": "1c4d3dbbc03a",
+  "by_mode": {
+    "FM-01": {
+      "bug": "leaky_trace",
+      "trials": 70,
+      "detected": 70,
+      "missed_items": []
+    },
+    "FM-02": {
+      "bug": "ignore_denied",
+      "trials": 10,
+      "detected": 10,
+      "missed_items": []
+    },
+    "FM-03": {
+      "bug": "ticket_trust",
+      "trials": 5,
+      "detected": 5,
+      "missed_items": []
+    },
+    "FM-04": {
+      "bug": "sum_parts",
+      "trials": 5,
+      "detected": 5,
+      "missed_items": []
+    },
+    "FM-05": {
+      "bug": "pre_deducted",
+      "trials": 15,
+      "detected": 10,
+      "missed_items": [
+        "E-013"
+      ]
+    },
+    "FM-06": {
+      "bug": "stale_clause",
+      "trials": 5,
+      "detected": 5,
+      "missed_items": []
+    },
+    "FM-07": {
+      "bug": "sibling_refund",
+      "trials": 20,
+      "detected": 20,
+      "missed_items": []
+    },
+    "FM-08": {
+      "bug": "misreport",
+      "trials": 10,
+      "detected": 10,
+      "missed_items": []
+    }
+  },
+  "detected": 135,
+  "trials": 140,
+  "detection_rate": 0.9643,
+  "fixed_false_alarms": 0,
+  "fixed_trials": 70,
+  "false_alarm_rate": 0.0
+}

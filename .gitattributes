@@ -1,0 +1,3 @@
+# The eval gate compares the SHA of these files, so Windows and Linux must see the same bytes.
+src/data/eval/eval_set_*.jsonl text eol=lf
+src/data/eval/labels_*.json text eol=lf
